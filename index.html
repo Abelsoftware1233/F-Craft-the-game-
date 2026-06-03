@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MarioCraft - Faisel's Mijn Avontuur</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sky:#5C94FC;--grass:#5aB855;--dirt:#8B5E3C;--stone:#8A8A8A;
+  --gold:#FFD700;--red:#E52222;--green:#00B800;--dark:#0d0d1a;
+  --pixel:'Press Start 2P',monospace;
+  --hud-h:52px;--hotbar-h:62px;--mc-h:88px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--dark);
+  font-family:var(--pixel);image-rendering:pixelated;
+  -webkit-tap-highlight-color:transparent;user-select:none}
+button{font-family:var(--pixel);cursor:pointer;border:none;outline:none}
+.screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1}
+.screen.active{display:flex}
+
+/* ── MENU ── */
+#screen-menu{background:linear-gradient(180deg,#0a0318 0%,#0d2060 45%,#0d4a18 75%,#1a6b1a 100%);flex-direction:column;overflow:hidden}
+.stars{position:absolute;inset:0;pointer-events:none}
+.stars::before,.stars::after{content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 8% 12%,#fff,transparent),
+    radial-gradient(1px 1px at 22% 8%,#ffffffbb,transparent),
+    radial-gradient(2px 2px at 38% 18%,#fff,transparent),
+    radial-gradient(1px 1px at 55% 6%,#ffffffcc,transparent),
+    radial-gradient(1.5px 1.5px at 72% 14%,#fff,transparent),
+    radial-gradient(1px 1px at 88% 9%,#ffffffaa,transparent),
+    radial-gradient(1px 1px at 15% 35%,#ffffffcc,transparent),
+    radial-gradient(1.5px 1.5px at 45% 28%,#fff,transparent),
+    radial-gradient(1px 1px at 65% 40%,#ffffffbb,transparent),
+    radial-gradient(2px 2px at 82% 32%,#fff,transparent),
+    radial-gradient(1px 1px at 5% 55%,#ffffffaa,transparent),
+    radial-gradient(1.5px 1.5px at 30% 48%,#fff,transparent),
+    radial-gradient(1px 1px at 50% 60%,#ffffffcc,transparent),
+    radial-gradient(1px 1px at 75% 52%,#ffffffbb,transparent),
+    radial-gradient(2px 2px at 92% 44%,#fff,transparent);
+}
+.stars::before{animation:twinkle 2.8s ease-in-out infinite alternate}
+.stars::after{animation:twinkle 4.2s ease-in-out infinite alternate-reverse;opacity:.6}
+@keyframes twinkle{from{opacity:.3}to{opacity:1}}
+
+/* Floating clouds in menu bg */
+.menu-cloud{position:absolute;border-radius:50%;background:rgba(255,255,255,.12);filter:blur(18px);pointer-events:none;animation:cloudDrift linear infinite}
+@keyframes cloudDrift{from{transform:translateX(-120px)}to{transform:translateX(120vw)}}
+
+.menu-wrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;padding:20px 16px;width:100%;max-width:480px}
+.logo-block{text-align:center;position:relative}
+.logo-mario{font-size:clamp(2.2rem,9vw,3.4rem);color:#FF3333;
+  text-shadow:4px 4px 0 #800000,6px 6px 0 rgba(0,0,0,.4),-2px -2px 0 #ff9999;
+  animation:bob 1.5s ease-in-out infinite alternate;letter-spacing:6px;display:block}
+.logo-craft{font-size:clamp(2.2rem,9vw,3.4rem);color:#44DD44;
+  text-shadow:4px 4px 0 #006600,6px 6px 0 rgba(0,0,0,.4),-2px -2px 0 #aaffaa;
+  animation:bob 1.5s ease-in-out infinite alternate .5s;letter-spacing:6px;display:block}
+.logo-sub{font-size:.5rem;color:#FFD700;margin-top:6px;letter-spacing:3px;animation:pulse 2.2s infinite;
+  text-shadow:0 0 10px rgba(255,215,0,.5)}
+@keyframes bob{from{transform:translateY(-5px) rotate(-1deg)}to{transform:translateY(5px) rotate(1deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+.player-preview{
+  border:4px solid #FFD700;
+  box-shadow:0 0 0 2px #8B6914,0 0 24px rgba(255,215,0,.5),0 0 48px rgba(255,215,0,.2);
+  background:linear-gradient(135deg,rgba(0,0,80,.6),rgba(0,0,0,.4));
+  border-radius:6px;padding:6px;position:relative}
+.player-preview::after{content:'FAISEL';position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
+  font-size:.3rem;color:#FFD700;letter-spacing:2px;white-space:nowrap}
+#preview-canvas{display:block;image-rendering:pixelated}
+
+.menu-btns{display:flex;flex-direction:column;gap:14px;width:100%;max-width:280px;margin-top:10px}
+.btn{display:block;width:100%;padding:14px 0;font-size:.68rem;border-radius:4px;
+  letter-spacing:1px;transition:transform .1s,box-shadow .1s,filter .1s;text-align:center}
+.btn:active{transform:translateY(4px)!important;box-shadow:none!important;filter:brightness(.85)}
+.btn-play{background:linear-gradient(180deg,#FF4444,#CC1111);color:#fff;
+  box-shadow:0 6px 0 #660000,0 8px 12px rgba(0,0,0,.4);
+  text-shadow:2px 2px 0 #880000}
+.btn-play:hover{background:linear-gradient(180deg,#FF6666,#EE2222);filter:brightness(1.1)}
+.btn-secondary{background:linear-gradient(180deg,#666,#444);color:#fff;
+  box-shadow:0 6px 0 #1a1a1a,0 8px 12px rgba(0,0,0,.3)}
+.btn-secondary:hover{background:linear-gradient(180deg,#888,#555)}
+.menu-footer{font-size:.36rem;color:rgba(255,255,255,.4);text-align:center;line-height:2.4;
+  border-top:1px solid rgba(255,255,255,.1);padding-top:10px;width:100%}
+
+/* ── HOE TE SPELEN ── */
+#screen-howto{background:linear-gradient(180deg,#0a0318 0%,#0d1a40 100%)}
+.howto-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px 16px;width:100%;max-width:480px}
+.howto-title{font-size:.9rem;color:var(--gold);text-shadow:3px 3px 0 #8B6914,0 0 20px rgba(255,215,0,.3);margin-bottom:4px}
+.howto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.howto-item{background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.14);border-radius:6px;
+  padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-size:.42rem;color:#ccc;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.howto-key{background:linear-gradient(180deg,#FFE033,#CC9900);color:#000;
+  padding:4px 10px;border-radius:3px;font-size:.48rem;
+  box-shadow:0 3px 0 #8B6914,0 4px 6px rgba(0,0,0,.3)}
+.howto-tip{font-size:.4rem;color:#aaa;text-align:center;line-height:2.4;
+  background:linear-gradient(135deg,rgba(0,200,0,.06),rgba(0,100,0,.04));
+  border:1px solid rgba(0,200,0,.2);padding:12px;border-radius:6px;width:100%}
+
+/* ── LEVEL SELECT ── */
+#screen-levels{background:linear-gradient(180deg,#0a0318 0%,#0d1a40 100%);overflow-y:auto}
+.levels-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;padding:20px 14px;width:100%;max-width:560px;min-height:100%}
+.levels-title{font-size:.85rem;color:var(--gold);text-shadow:3px 3px 0 #8B6914,0 0 20px rgba(255,215,0,.3)}
+.levels-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.level-card{
+  background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.04));
+  border:2px solid rgba(255,255,255,.15);border-radius:8px;
+  padding:12px 8px;text-align:center;cursor:pointer;
+  transition:transform .12s,border-color .2s,box-shadow .2s;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  box-shadow:0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1)}
+.level-card:hover{border-color:#FFD700;transform:translateY(-3px) scale(1.04);
+  box-shadow:0 8px 20px rgba(0,0,0,.5),0 0 16px rgba(255,215,0,.2)}
+.level-card.locked{opacity:.35;cursor:not-allowed}
+.level-card.locked:hover{transform:none;border-color:rgba(255,255,255,.15);box-shadow:none}
+.level-num{font-size:1rem;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.level-name{font-size:.32rem;color:#bbb;line-height:1.9}
+.level-stars{font-size:.65rem;letter-spacing:1px}
+.level-world{font-size:.38rem;padding:2px 8px;border-radius:20px;font-weight:bold;letter-spacing:.5px}
+.world-grass{background:linear-gradient(90deg,#1a8a00,#2dcc00);color:#fff;text-shadow:1px 1px 0 #006600}
+.world-cave{background:linear-gradient(90deg,#333,#555);color:#ccc}
+.world-nether{background:linear-gradient(90deg,#8B0000,#CC2200);color:#ffaaaa}
+
+/* ── GAME SCREEN ── */
+#screen-game{flex-direction:column;background:#000;overflow:hidden}
+
+/* HUD */
+#hud{
+  position:fixed;top:0;left:0;right:0;height:var(--hud-h);
+  background:linear-gradient(180deg,rgba(0,0,0,.92),rgba(0,0,0,.75));
+  border-bottom:2px solid rgba(255,200,0,.25);
+  display:flex;align-items:center;padding:0 14px;gap:8px;z-index:10;
+  font-size:.48rem;color:#fff;
+  backdrop-filter:blur(4px);
+}
+.hud-left,.hud-right{display:flex;flex-direction:column;gap:3px;flex:1}
+.hud-right{align-items:flex-end}
+.hud-center{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.hud-stat{display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:4px;padding:3px 7px;min-width:70px}
+.hud-stat-center{justify-content:center}
+#hud-level{color:#FFD700;font-size:.46rem;text-shadow:0 0 8px rgba(255,215,0,.5)}
+#hud-timer{color:#FF9900;font-size:.44rem}
+#hud-timer.low{color:#ff3333;animation:pulse .6s infinite}
+
+/* HOTBAR */
+#hotbar{
+  position:fixed;bottom:calc(var(--mc-h) + 6px);left:50%;transform:translateX(-50%);
+  display:flex;gap:5px;z-index:10;
+  background:linear-gradient(180deg,rgba(20,20,20,.92),rgba(10,10,10,.95));
+  border:2px solid rgba(255,255,255,.18);border-radius:8px;padding:5px;
+  box-shadow:0 4px 16px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08)}
+.hotbar-slot{
+  width:48px;height:48px;
+  background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(0,0,0,.3));
+  border:2px solid rgba(255,255,255,.12);border-radius:5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;cursor:pointer;transition:all .12s;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.4)}
+.hotbar-slot.selected{
+  border-color:rgba(255,255,255,.9);
+  background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08));
+  box-shadow:0 0 10px rgba(255,255,255,.2),inset 0 2px 4px rgba(0,0,0,.2)}
+.hotbar-slot:hover:not(.selected){border-color:rgba(255,255,255,.35)}
+.slot-icon{font-size:1.5rem;line-height:1}
+.slot-label{position:absolute;bottom:2px;right:4px;font-size:.28rem;color:rgba(255,255,255,.5)}
+
+/* CANVAS */
+#game-canvas{
+  position:fixed;top:var(--hud-h);left:0;right:0;
+  bottom:calc(var(--hotbar-h) + var(--mc-h) + 14px);
+  width:100%;height:calc(100% - var(--hud-h) - var(--hotbar-h) - var(--mc-h) - 14px);
+  display:block;image-rendering:pixelated;background:var(--sky)}
+
+/* MOBILE CONTROLS */
+#mobile-controls{
+  position:fixed;bottom:0;left:0;right:0;height:var(--mc-h);
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 20px;
+  background:linear-gradient(180deg,rgba(0,0,0,.82),rgba(0,0,0,.96));
+  border-top:2px solid rgba(255,255,255,.08);z-index:10}
+.mc-left,.mc-right{display:flex;gap:10px;align-items:center}
+.mc-btn{
+  width:62px;height:62px;
+  background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.2),rgba(0,0,0,.2));
+  border:2px solid rgba(255,255,255,.2);border-radius:50%;
+  font-size:1.4rem;color:#fff;display:flex;align-items:center;justify-content:center;
+  transition:all .08s;touch-action:manipulation;
+  box-shadow:0 4px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.15)}
+.mc-btn:active,.mc-btn.pressed{
+  background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.4),rgba(0,0,0,.1));
+  transform:scale(.9);box-shadow:0 2px 4px rgba(0,0,0,.5);border-color:var(--gold)}
+.mc-jump{border-color:rgba(255,140,0,.6);background:radial-gradient(circle at 35% 35%,rgba(255,120,0,.3),rgba(100,0,0,.2))}
+.mc-action{border-color:rgba(0,160,255,.6);background:radial-gradient(circle at 35% 35%,rgba(0,120,255,.3),rgba(0,0,100,.2))}
+.mc-craft{border-color:rgba(0,220,0,.6);background:radial-gradient(circle at 35% 35%,rgba(0,180,0,.3),rgba(0,60,0,.2))}
+
+#btn-pause{
+  position:fixed;top:calc(var(--hud-h) + 8px);right:10px;z-index:15;
+  background:rgba(0,0,0,.65);border:2px solid rgba(255,255,255,.2);border-radius:6px;
+  color:#fff;font-size:.9rem;width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px)}
+
+/* CRAFTING */
+#crafting-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(6px)}
+#crafting-overlay.hidden{display:none}
+.crafting-panel{
+  background:linear-gradient(145deg,#252525,#1a1a1a);
+  border:3px solid #7a4a20;border-radius:10px;padding:18px;
+  width:92%;max-width:460px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 0 0 1px rgba(255,200,100,.1),0 20px 60px rgba(0,0,0,.8)}
+.crafting-title{font-size:.7rem;color:var(--gold);text-align:center;margin-bottom:14px;
+  text-shadow:2px 2px 0 #8B6914,0 0 16px rgba(255,215,0,.4)}
+.crafting-body{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.crafting-left,.crafting-right{flex:1}
+.crafting-arrow{font-size:1.6rem;color:var(--gold);padding-top:28px;flex-shrink:0}
+.crafting-label{font-size:.35rem;color:#888;margin-bottom:8px;text-align:center;letter-spacing:1px}
+#crafting-inventory,#crafting-recipes{display:flex;flex-direction:column;gap:5px}
+.inv-item,.recipe-item{
+  background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(0,0,0,.2));
+  border:1px solid rgba(255,255,255,.1);border-radius:5px;
+  padding:8px 10px;font-size:.4rem;color:#ddd;
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  transition:all .14s;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.inv-item:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
+.recipe-item:hover{border-color:rgba(255,215,0,.5);background:rgba(255,215,0,.06)}
+.recipe-item.craftable{border-color:rgba(0,200,0,.5);background:rgba(0,100,0,.1)}
+.recipe-item.craftable:hover{background:rgba(0,180,0,.15)}
+.recipe-item.not-craftable{opacity:.35;cursor:not-allowed}
+.item-icon{font-size:1.2rem}
+.item-count{margin-left:auto;color:#FFD700;font-size:.42rem}
+
+/* PAUSE / END */
+#pause-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:60;backdrop-filter:blur(8px)}
+#pause-overlay.hidden{display:none}
+.pause-panel{display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 28px;
+  background:linear-gradient(145deg,#181830,#0d0d20);
+  border:3px solid #FFD700;border-radius:12px;min-width:250px;
+  box-shadow:0 0 0 1px rgba(255,215,0,.15),0 0 40px rgba(255,215,0,.15),0 20px 50px rgba(0,0,0,.7)}
+.pause-title{font-size:1rem;color:var(--gold);text-shadow:3px 3px 0 #8B6914,0 0 20px rgba(255,215,0,.4)}
+.pause-panel .btn{width:210px}
+
+#end-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:60;backdrop-filter:blur(8px)}
+#end-overlay.hidden{display:none}
+.end-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 26px;
+  background:linear-gradient(145deg,#1a0808,#0d0d20);
+  border:3px solid var(--red);border-radius:12px;min-width:270px;
+  box-shadow:0 0 0 1px rgba(229,34,34,.15),0 0 40px rgba(229,34,34,.2),0 20px 50px rgba(0,0,0,.7)}
+.end-panel.win{
+  background:linear-gradient(145deg,#1a1500,#0d0d20);
+  border-color:#FFD700;
+  box-shadow:0 0 0 1px rgba(255,215,0,.15),0 0 40px rgba(255,215,0,.25),0 20px 50px rgba(0,0,0,.7)}
+.end-title{font-size:1.1rem;color:var(--red);text-shadow:3px 3px 0 #8B0000}
+.end-panel.win .end-title{color:#FFD700;text-shadow:3px 3px 0 #8B6914,0 0 20px rgba(255,215,0,.4)}
+.end-score{font-size:.58rem;color:#ddd;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);padding:6px 18px;border-radius:4px}
+.end-stars{font-size:1.6rem;letter-spacing:5px}
+.end-panel .btn{width:230px}
+
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.3)}
+::-webkit-scrollbar-thumb{background:#444;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#666}
+
+@media(max-width:400px){.levels-grid{grid-template-columns:repeat(2,1fr)}.hotbar-slot{width:42px;height:42px}.mc-btn{width:54px;height:54px;font-size:1.2rem}}
+@media(min-width:768px){:root{--mc-h:0px}#mobile-controls{display:none}#game-canvas{bottom:calc(var(--hotbar-h) + 8px);height:calc(100% - var(--hud-h) - var(--hotbar-h) - 8px)}#hotbar{bottom:8px}}
+
+@keyframes particle-fall{0%{transform:translateY(-12px) rotate(0deg) scale(1);opacity:1}100%{transform:translateY(90px) rotate(720deg) scale(.3);opacity:0}}
+.particle{position:fixed;pointer-events:none;z-index:100;width:7px;height:7px;border-radius:2px;animation:particle-fall .9s ease-out forwards}
+
+#toast{position:fixed;top:calc(var(--hud-h) + 10px);left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.88);border:2px solid var(--gold);color:var(--gold);
+  font-size:.42rem;padding:8px 18px;border-radius:6px;z-index:80;
+  pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;
+  box-shadow:0 0 16px rgba(255,215,0,.3),0 4px 12px rgba(0,0,0,.5);
+  text-shadow:0 0 8px rgba(255,215,0,.5)}
+#toast.show{opacity:1}
+
+/* Mine progress bar overlay on canvas */
+#mine-bar-wrap{position:fixed;bottom:calc(var(--hotbar-h) + var(--mc-h) + 18px);left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .2s;z-index:9;pointer-events:none}
+#mine-bar-wrap.show{opacity:1}
+#mine-bar-bg{width:80px;height:8px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:4px;overflow:hidden}
+#mine-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#FF9900,#FFD700);border-radius:4px;transition:width .1s}
+#mine-bar-icon{font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div id="screen-menu" class="screen active">
+  <div class="stars"></div>
+  <div class="menu-wrap">
+    <div class="logo-block">
+      <div class="logo-mario">FAISEL</div>
+      <div class="logo-craft">CRAFT</div>
+      <div class="logo-sub">☆ Faisel × Platform × MarioCraft ☆</div>
+    </div>
+    <div class="player-preview"><canvas id="preview-canvas" width="64" height="64"></canvas></div>
+    <div class="menu-btns">
+      <button class="btn btn-play" id="btn-start">▶ SPELEN</button>
+      <button class="btn btn-secondary" id="btn-howto">? HOE TE SPELEN</button>
+    </div>
+    <div class="menu-footer">Pijltjes + Z=springen · X=hakken · C=crafting</div>
+  </div>
+</div>
+
+<div id="screen-howto" class="screen">
+  <div class="howto-wrap">
+    <h2 class="howto-title">HOE TE SPELEN</h2>
+    <div class="howto-grid">
+      <div class="howto-item"><span class="howto-key">← →</span><span>Lopen</span></div>
+      <div class="howto-item"><span class="howto-key">Z / ↑</span><span>Springen</span></div>
+      <div class="howto-item"><span class="howto-key">X</span><span>Hakken / Aanvallen</span></div>
+      <div class="howto-item"><span class="howto-key">C</span><span>Crafting openen</span></div>
+      <div class="howto-item"><span class="howto-key">1–5</span><span>Hotbar selecteren</span></div>
+      <div class="howto-item"><span class="howto-key">🎯</span><span>Sprong op vijand = win!</span></div>
+    </div>
+    <p class="howto-tip">💡 Spring BOVEN op vijanden om ze te verslaan! Hak blokken voor resources. Verzamel munten 🪙 en sterren ⭐. Bereik de vlag om te winnen!</p>
+    <button class="btn btn-secondary" id="btn-back">← TERUG</button>
+  </div>
+</div>
+
+<div id="screen-levels" class="screen">
+  <div class="levels-wrap">
+    <h2 class="levels-title">KIES EEN LEVEL</h2>
+    <div class="levels-grid" id="levels-grid"></div>
+    <button class="btn btn-secondary" id="btn-levels-back">← MENU</button>
+  </div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div id="hud">
+    <div class="hud-left">
+      <div class="hud-stat" id="hud-lives">❤️ <span id="lives-val">3</span></div>
+      <div class="hud-stat" id="hud-score">⭐ <span id="score-val">0</span></div>
+    </div>
+    <div class="hud-center">
+      <div class="hud-stat hud-stat-center" id="hud-level">LEVEL <span id="level-val">1</span></div>
+      <div class="hud-stat hud-stat-center" id="hud-timer">⏱ <span id="timer-val">300</span></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-stat" id="hud-coins">🪙 <span id="coins-val">0</span></div>
+      <div id="hud-inv" style="font-size:.32rem;color:#aaa;text-align:right;padding:2px 4px"></div>
+    </div>
+  </div>
+  <div id="hotbar">
+    <div class="hotbar-slot selected" data-slot="0"><div class="slot-icon" id="slot-0"></div><div class="slot-label">1</div></div>
+    <div class="hotbar-slot" data-slot="1"><div class="slot-icon" id="slot-1"></div><div class="slot-label">2</div></div>
+    <div class="hotbar-slot" data-slot="2"><div class="slot-icon" id="slot-2"></div><div class="slot-label">3</div></div>
+    <div class="hotbar-slot" data-slot="3"><div class="slot-icon" id="slot-3"></div><div class="slot-label">4</div></div>
+    <div class="hotbar-slot" data-slot="4"><div class="slot-icon" id="slot-4"></div><div class="slot-label">5</div></div>
+  </div>
+  <canvas id="game-canvas"></canvas>
+  <div id="mobile-controls">
+    <div class="mc-left">
+      <button class="mc-btn" id="mc-left">◀</button>
+      <button class="mc-btn" id="mc-right">▶</button>
+    </div>
+    <div class="mc-right">
+      <button class="mc-btn mc-jump" id="mc-jump">🅰</button>
+      <button class="mc-btn mc-action" id="mc-mine">⛏</button>
+      <button class="mc-btn mc-craft" id="mc-craft">🔨</button>
+    </div>
+  </div>
+  <button id="btn-pause">⏸</button>
+</div>
+
+<div id="crafting-overlay" class="hidden">
+  <div class="crafting-panel">
+    <div class="crafting-title">⚒ CRAFTING TABLE</div>
+    <div class="crafting-body">
+      <div class="crafting-left"><div class="crafting-label">MATERIALEN</div><div id="crafting-inventory"></div></div>
+      <div class="crafting-arrow">→</div>
+      <div class="crafting-right"><div class="crafting-label">RECEPTEN</div><div id="crafting-recipes"></div></div>
+    </div>
+    <button class="btn btn-secondary" id="btn-close-craft">✕ SLUITEN</button>
+  </div>
+</div>
+
+<div id="pause-overlay" class="hidden">
+  <div class="pause-panel">
+    <div class="pause-title">⏸ PAUZE</div>
+    <button class="btn btn-play" id="btn-resume">▶ DOORGAAN</button>
+    <button class="btn btn-secondary" id="btn-quit">🏠 MENU</button>
+  </div>
+</div>
+
+<div id="end-overlay" class="hidden">
+  <div class="end-panel">
+    <div class="end-title" id="end-title">GAME OVER</div>
+    <div class="end-score">Score: <span id="end-score">0</span></div>
+    <div class="end-stars" id="end-stars"></div>
+    <button class="btn btn-play" id="btn-retry">↺ OPNIEUW</button>
+    <button class="btn btn-secondary" id="btn-next-level" style="display:none">NEXT LEVEL ▶</button>
+    <button class="btn btn-secondary" id="btn-end-menu">🏠 MENU</button>
+  </div>
+</div>
+
+<script>
+(function(){
+// ============================================ CONSTANTEN ============================================
+const TILE = 32, GRAVITY = 0.45, JUMP_FORCE = -11, PLAYER_SPEED = 3.2, FPS = 60;
+
+// ============================================ TILE SOORTEN ============================================
+const T = {
+  EMPTY: 0, GRASS: 1, DIRT: 2, STONE: 3, WOOD: 4, LEAVES: 5, COAL: 6, IRON: 7, GOLD: 8,
+  CLOUD: 9, BRICK: 10, PIPE_T: 11, PIPE_B: 12, COIN_BLOCK: 13, FLAG: 14, LAVA: 15, SAND: 16,
+  NICKEL: 17, COPPER: 18, DIAMOND: 19, OBSIDIAN: 20, CRYSTAL: 21,
+  SNOW: 22, ICE: 23, CORAL: 24, SANDSTONE: 25, MUSHROOM_BLOCK: 26
+};
+
+const SOLID = new Set([T.GRASS,T.DIRT,T.STONE,T.WOOD,T.LEAVES,T.COAL,T.IRON,T.GOLD,T.CLOUD,T.BRICK,T.PIPE_T,T.PIPE_B,T.COIN_BLOCK,T.SAND,T.NICKEL,T.COPPER,T.DIAMOND,T.OBSIDIAN,T.CRYSTAL,T.SNOW,T.ICE,T.CORAL,T.SANDSTONE,T.MUSHROOM_BLOCK]);
+const MINABLE = new Set([T.DIRT,T.STONE,T.WOOD,T.LEAVES,T.COAL,T.IRON,T.GOLD,T.SAND,T.NICKEL,T.COPPER,T.DIAMOND,T.OBSIDIAN,T.CRYSTAL,T.SNOW,T.ICE,T.CORAL,T.SANDSTONE,T.MUSHROOM_BLOCK,T.GRASS,T.BRICK,T.CLOUD,T.COIN_BLOCK]);
+const TILE_DROP = {
+  [T.DIRT]:'dirt',[T.STONE]:'stone',[T.WOOD]:'wood',[T.LEAVES]:'wood',
+  [T.COAL]:'coal',[T.IRON]:'iron',[T.GOLD]:'gold_ore',[T.SAND]:'dirt',
+  [T.NICKEL]:'nickel',[T.COPPER]:'copper',[T.DIAMOND]:'diamond',
+  [T.OBSIDIAN]:'obsidian',[T.CRYSTAL]:'crystal',[T.SNOW]:'dirt',
+  [T.ICE]:'ice',[T.CORAL]:'coral',[T.SANDSTONE]:'stone',[T.MUSHROOM_BLOCK]:'dirt',
+  [T.GRASS]:'dirt',[T.BRICK]:'stone',[T.CLOUD]:'dirt',[T.COIN_BLOCK]:'gold_ore'
+};
+
+function emptyMap(w, h) { return Array.from({ length: h }, () => new Array(w).fill(0)); }
+
+// ============================================ LEVEL DEFINITIES (16 stuks) ============================================
+function buildMap1(){let W=70,H=20,m=emptyMap(W,H);for(let x=0;x<W;x++){m[H-1][x]=T.DIRT;m[H-2][x]=T.DIRT;m[H-3][x]=T.GRASS}[[5,14,6],[10,12,5],[18,11,6],[26,13,5],[35,10,7],[44,12,6],[52,11,6],[60,13,5]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.BRICK});[[8,12],[22,12],[40,12],[58,12]].forEach(([x,y])=>{m[y][x]=T.WOOD;m[y-1][x]=T.WOOD});[[12,10],[20,9],[28,11],[36,8],[45,10],[53,9]].forEach(([x,y])=>{if(m[y])m[y][x]=T.COIN_BLOCK});m[H-4][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-5},enemies:[{x:10,y:H-4,t:'g'},{x:28,y:H-4,t:'g'},{x:44,y:H-4,t:'k'},{x:60,y:H-4,t:'g'}],coins:[[7,H-5],[15,H-5],[25,H-5],[36,7],[53,8]],stars:[[12,9],[36,7]]}}
+function buildMap2(){let W=65,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++){m[H-1][x]=T.STONE;m[H-2][x]=T.STONE}[[4,16,8],[16,14,6],[24,12,8],[36,16,7],[44,10,6],[54,14,7]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.STONE});[[8,H-4],[20,14],[30,12],[40,16]].forEach(([x,y])=>{if(m[y])m[y][x]=T.COAL});[[15,H-3],[25,13],[37,15]].forEach(([x,y])=>{if(m[y])m[y][x]=T.IRON});m[H-4][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-4},enemies:[{x:10,y:H-3,t:'b'},{x:30,y:13,t:'b'},{x:45,y:11,t:'g'}],coins:[[8,H-5],[24,11],[36,H-5],[54,13]],stars:[[20,13],[44,9]]}}
+function buildMap3(){let W=72,H=20,m=emptyMap(W,H);for(let x=0;x<W;x++){m[H-1][x]=T.BRICK;m[H-2][x]=T.BRICK}[[5,H-5,4],[15,H-5,5],[28,H-6,5],[40,H-5,4],[52,H-6,5],[64,H-5,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.BRICK});[[10,H-3,3],[25,H-3,3],[40,H-3,3],[55,H-3,3]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.LAVA});[[8,10,4],[20,8,5],[38,6,6],[55,9,5]].forEach(([x,y,h])=>{for(let dy=0;dy<h;dy++)if(m[y+dy])m[y+dy][x]=T.BRICK});m[H-6][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:3,y:H-5},enemies:[{x:12,y:H-4,t:'k'},{x:30,y:H-5,t:'k'},{x:48,y:H-4,t:'g'},{x:66,y:H-5,t:'k'}],coins:[[6,H-7],[18,H-7],[34,H-7],[49,H-6],[65,H-7]],stars:[[10,11],[38,8],[60,10]]}}
+function buildMap4(){let W=72,H=18,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.GRASS;[[2,6,5],[10,4,6],[20,7,4],[30,5,5],[40,3,7],[50,6,4],[58,4,5],[66,7,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.CLOUD});[[4,5],[12,3],[32,4],[52,5],[60,3]].forEach(([x,y])=>{m[y][x]=T.WOOD;if(m[y-1])m[y-1][x]=T.WOOD});m[6][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-3},enemies:[{x:11,y:5,t:'g'},{x:31,y:6,t:'g'},{x:51,y:7,t:'k'}],coins:[[12,1],[22,4],[42,0],[62,1]],stars:[[12,1],[42,0]]}}
+function buildMap5(){let W=68,H=24,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.STONE;for(let y=H-4;y>=6;y-=3)for(let x=3;x<W-3;x++)if((x+y)%5===0)m[y][x]=T.IRON;else if(x%11===0)m[y][x]=T.GOLD;else m[y][x]=T.STONE;[[4,H-5,5],[12,H-9,5],[22,H-5,6],[30,H-13,6],[38,H-9,5],[46,H-5,6],[54,H-12,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)if(m[y])m[y][x+i]=T.STONE});m[H-6][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-2},enemies:[{x:12,y:H-4,t:'b'},{x:38,y:H-4,t:'b'},{x:50,y:H-4,t:'k'}],coins:[[8,H-3],[20,H-6],[35,H-3],[50,H-3]],stars:[[30,H-14],[54,H-13]]}}
+function buildMap6(){let W=75,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++){m[H-1][x]=T.BRICK}for(let x=0;x<W;x++)m[H-2][x]=T.LAVA;[[2,H-4,4],[10,H-5,3],[16,H-4,4],[24,H-6,5],[32,H-4,3],[40,H-5,4],[48,H-7,5],[56,H-4,5],[65,H-5,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.BRICK});[[5,4,6],[20,3,7],[38,4,6],[54,5,5],[68,4,5]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.BRICK});m[H-5][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-5},enemies:[{x:10,y:H-4,t:'k'},{x:40,y:H-4,t:'k'},{x:65,y:H-4,t:'k'}],coins:[[5,3],[20,2],[38,3],[68,3]],stars:[[24,H-7],[68,5]]}}
+function buildMap7(){let W=70,H=20,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.SNOW;[[5,13,6],[15,11,5],[25,14,5],[35,10,6],[45,13,5],[55,11,6]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.ICE});m[H-4][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-5},enemies:[{x:8,y:H-4,t:'g'},{x:28,y:12,t:'b'}],coins:[[10,H-5],[30,11],[55,H-5]],stars:[[18,12],[48,12]]}}
+function buildMap8(){let W=68,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.SAND;[[4,16,5],[12,14,5],[24,17,4],[36,13,6],[48,15,5],[60,17,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.CORAL});m[H-4][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-4},enemies:[{x:12,y:H-3,t:'b'},{x:40,y:H-4,t:'k'}],coins:[[6,H-5],[22,15],[52,14]],stars:[[18,13],[58,14]]}}
+function buildMap9(){let W=72,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.DIRT;[[5,H-7,4],[15,H-8,5],[30,H-6,4],[50,H-9,5],[65,H-7,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.STONE});m[H-7][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-5},enemies:[{x:12,y:H-4,t:'g'},{x:35,y:H-7,t:'k'}],coins:[[8,H-8],[38,H-8],[60,H-8]],stars:[[22,H-9],[55,H-9]]}}
+function buildMap10(){let W=70,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.SANDSTONE;[[6,H-4,6],[20,H-5,5],[40,H-4,6],[55,H-5,5]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.SANDSTONE});m[H-5][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-4},enemies:[{x:12,y:H-4,t:'g'},{x:44,y:H-5,t:'k'}],coins:[[8,H-5],[28,H-5],[60,H-5]],stars:[[25,H-6],[62,H-6]]}}
+function buildMap11(){let W=72,H=20,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.MUSHROOM_BLOCK;[[5,H-3,4],[15,H-4,5],[30,H-3,4],[50,H-4,5],[65,H-3,4]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.MUSHROOM_BLOCK});m[H-5][W-3]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-5},enemies:[{x:10,y:H-4,t:'b'},{x:40,y:H-5,t:'k'}],coins:[[8,H-6],[35,H-6],[60,H-6]],stars:[[20,H-5],[55,H-6]]}}
+function buildMap12(){let W=70,H=24,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.OBSIDIAN;[[8,H-8,5],[22,H-12,5],[38,H-7,5],[55,H-11,5]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.CRYSTAL});m[H-8][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-3},enemies:[{x:15,y:H-4,t:'b'},{x:45,y:H-8,t:'b'}],coins:[[10,H-9],[32,H-12],[58,H-9]],stars:[[28,H-13],[62,H-10]]}}
+function buildMap13(){let W=80,H=18,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.CLOUD;[[2,4,8],[18,6,7],[35,3,9],[55,5,7],[70,4,7]].forEach(([x,y,w])=>{for(let i=0;i<w;i++){m[y][x+i]=T.CLOUD}});m[6][W-5]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-3},enemies:[{x:12,y:5,t:'g'},{x:48,y:6,t:'k'}],coins:[[7,4],[28,2],[62,5]],stars:[[22,3],[70,4]]}}
+function buildMap14(){let W=70,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++){m[H-1][x]=T.BRICK}[[4,H-5,3],[14,H-6,4],[28,H-5,3],[42,H-7,4],[58,H-5,3]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.BRICK});m[H-6][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-6},enemies:[{x:12,y:H-5,t:'k'},{x:38,y:H-6,t:'k'}],coins:[[6,H-7],[32,H-7],[62,H-7]],stars:[[20,H-6],[52,H-7]]}}
+function buildMap15(){let W=72,H=24,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.OBSIDIAN;[[6,4,6],[24,4,7],[48,5,6],[66,4,5]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.OBSIDIAN});m[H-10][W-5]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-3},enemies:[{x:10,y:H-4,t:'b'},{x:40,y:H-5,t:'b'}],coins:[[8,H-6],[28,H-6],[58,H-6]],stars:[[18,H-7],[60,H-7]]}}
+function buildMap16(){let W=78,H=22,m=emptyMap(W,H);for(let x=0;x<W;x++)m[H-1][x]=T.GOLD;[[8,H-7,6],[22,H-10,7],[38,H-7,6],[56,H-12,7],[70,H-7,5]].forEach(([x,y,w])=>{for(let i=0;i<w;i++)m[y][x+i]=T.GOLD});m[H-12][W-4]=T.FLAG;return{w:W,h:H,data:m,playerStart:{x:2,y:H-5},enemies:[{x:10,y:H-4,t:'k'},{x:35,y:H-8,t:'k'},{x:65,y:H-7,t:'g'}],coins:[[5,H-6],[25,H-9],[48,H-11],[72,H-6]],stars:[[15,H-8],[48,H-13],[72,H-8]]}}
+
+const LEVEL_DEFS = [
+  {name:'Groene Heuvels',world:'Gras',worldClass:'world-grass',timeLimit:300,bgColor:'#5C94FC',bgColor2:'#87CEEB',clouds:true,map:buildMap1()},
+  {name:'Stenen Grotten',world:'Grot',worldClass:'world-cave',timeLimit:240,bgColor:'#1a1a2e',bgColor2:'#0d0d1e',clouds:false,map:buildMap2()},
+  {name:'Nether Fort',world:'Nether',worldClass:'world-nether',timeLimit:200,bgColor:'#1a0000',bgColor2:'#330000',clouds:false,map:buildMap3()},
+  {name:'Sky Kingdom',world:'Lucht',worldClass:'world-grass',timeLimit:260,bgColor:'#87CEEB',bgColor2:'#ADD8E6',clouds:true,map:buildMap4()},
+  {name:'Diepe Mijn',world:'Grot',worldClass:'world-cave',timeLimit:280,bgColor:'#0a0a0a',bgColor2:'#111',clouds:false,map:buildMap5()},
+  {name:'Vuurberg',world:'Nether',worldClass:'world-nether',timeLimit:180,bgColor:'#2a0000',bgColor2:'#1a0000',clouds:false,map:buildMap6()},
+  {name:'IJzig Woud',world:'Sneeuw',worldClass:'world-grass',timeLimit:270,bgColor:'#a8d4f0',bgColor2:'#c0e0ff',clouds:true,map:buildMap7()},
+  {name:'Oceaan',world:'Oceaan',worldClass:'world-cave',timeLimit:240,bgColor:'#0a2a5a',bgColor2:'#0d3a6a',clouds:false,map:buildMap8()},
+  {name:'Jungle',world:'Jungle',worldClass:'world-grass',timeLimit:220,bgColor:'#0d3a0d',bgColor2:'#1a5e1a',clouds:true,map:buildMap9()},
+  {name:'Woestijn',world:'Woestijn',worldClass:'world-cave',timeLimit:200,bgColor:'#d4a830',bgColor2:'#f0c840',clouds:false,map:buildMap10()},
+  {name:'Paddenstoel',world:'Paddo',worldClass:'world-grass',timeLimit:260,bgColor:'#2a0a3e',bgColor2:'#3a1050',clouds:false,map:buildMap11()},
+  {name:'Kristal Grot',world:'Kristal',worldClass:'world-cave',timeLimit:230,bgColor:'#001a2e',bgColor2:'#002a3e',clouds:false,map:buildMap12()},
+  {name:'Wolkenland',world:'Lucht',worldClass:'world-grass',timeLimit:290,bgColor:'#5090e0',bgColor2:'#70b0f8',clouds:true,map:buildMap13()},
+  {name:'Vulkaan',world:'Vulkaan',worldClass:'world-nether',timeLimit:160,bgColor:'#1a0000',bgColor2:'#2a0800',clouds:false,map:buildMap14()},
+  {name:'Obsidiaan',world:'Nether',worldClass:'world-nether',timeLimit:170,bgColor:'#0a000a',bgColor2:'#150015',clouds:false,map:buildMap15()},
+  {name:'Gouden Paleis',world:'Goud',worldClass:'world-grass',timeLimit:250,bgColor:'#c8a820',bgColor2:'#e0c040',clouds:true,map:buildMap16()}
+];
+
+// ============================================ GLOBALE VARIABELEN ============================================
+let game = null, canvas, ctx, rafId = null, lastTime = 0;
+const keys = {};
+
+// ============================================ HULPFUNCTIES ============================================
+function tileAt(mapData, tx, ty) { if (tx < 0 || ty < 0 || tx >= mapData.w || ty >= mapData.h) return T.STONE; return mapData.data[ty][tx]; }
+function isSolid(t) { return SOLID.has(t) && t !== T.COIN_BLOCK; }
+function addFloat(x, y, text) { if (game) game.floatTexts.push({ x, y, text, life: 60, vy: -1.2 }); }
+function spawnParticles(x, y, color, count) { for (let i = 0; i < count; i++) { let p = document.createElement('div'); p.className = 'particle'; p.style.cssText = `left:${x + (Math.random() - 0.5) * 30}px;top:${y + (Math.random() - 0.5) * 20}px;background:${color};`; document.body.appendChild(p); setTimeout(() => p.remove(), 800); } }
+function updateInvDisplay() { let el = document.getElementById('hud-inv'); if (!el || !game) return; let inv = game.inventory; let parts = []; if (inv.wood > 0) parts.push('🪵' + inv.wood); if (inv.stone > 0) parts.push('🪨' + inv.stone); if (inv.coal > 0) parts.push('⚫' + inv.coal); if (inv.iron > 0) parts.push('⬛' + inv.iron); if (inv.gold_ore > 0) parts.push('🟡' + inv.gold_ore); el.textContent = parts.join(' '); }
+
+// ============================================ HOTBAR ============================================
+const Hotbar = {
+  selected: 0, slots: ['wood_pickaxe', '', '', '', ''],
+  ITEM_ICONS: { wood: '🪵', stone: '🪨', dirt: '🟫', coal: '⚫', iron: '⬛', gold_ore: '🟡', wood_pickaxe: '⛏️', stone_pickaxe: '⛏', iron_pickaxe: '⚒️' },
+  setSlot(index, itemKey) { if (index < 0 || index > 4) return; this.slots[index] = itemKey; let icon = document.getElementById('slot-' + index); if (icon) icon.textContent = itemKey ? (this.ITEM_ICONS[itemKey] || '📦') : ''; },
+  select(index) { document.querySelectorAll('.hotbar-slot').forEach((s, i) => s.classList.toggle('selected', i === index)); this.selected = index; },
+  getSelected() { return this.slots[this.selected]; },
+  addItem(itemKey) { let idx = this.slots.findIndex(s => s === itemKey); if (idx === -1) idx = this.slots.findIndex(s => s === ''); if (idx === -1) idx = 0; this.setSlot(idx, itemKey); }
+};
+
+// ============================================ CRAFTING ============================================
+const Crafting = {
+  _open: false,
+  RECIPES: [
+    { name: 'Houten Bijl', key: 'wood_pickaxe', icon: '⛏️', needs: { wood: 3 }, result: 'wood_pickaxe', desc: '3x🪵' },
+    { name: 'Stenen Bijl', key: 'stone_pickaxe', icon: '⛏', needs: { stone: 3, wood: 2 }, result: 'stone_pickaxe', desc: '3x🪨 2x🪵' },
+    { name: 'IJzeren Bijl', key: 'iron_pickaxe', icon: '⚒️', needs: { iron: 3, wood: 2 }, result: 'iron_pickaxe', desc: '3x⬛ 2x🪵' }
+  ],
+  open(inventory) { document.getElementById('crafting-overlay').classList.remove('hidden'); this._open = true; this.render(inventory); },
+  close() { document.getElementById('crafting-overlay').classList.add('hidden'); this._open = false; },
+  render(inventory) {
+    let invEl = document.getElementById('crafting-inventory'); invEl.innerHTML = '';
+    let entries = Object.entries(inventory).filter(([, v]) => v > 0);
+    if (!entries.length) invEl.innerHTML = '<div style="font-size:.38rem;color:#666;text-align:center;padding:8px">Geen materialen</div>';
+    else entries.forEach(([key, count]) => { let icon = Hotbar.ITEM_ICONS[key] || '📦'; let div = document.createElement('div'); div.className = 'inv-item'; div.innerHTML = `<span class="item-icon">${icon}</span><span>${key}</span><span class="item-count">×${count}</span>`; invEl.appendChild(div); });
+    let recEl = document.getElementById('crafting-recipes'); recEl.innerHTML = '';
+    this.RECIPES.forEach(recipe => {
+      let canCraft = Object.entries(recipe.needs).every(([k, v]) => (inventory[k] || 0) >= v);
+      let div = document.createElement('div');
+      div.className = 'recipe-item ' + (canCraft ? 'craftable' : 'not-craftable');
+      div.innerHTML = `<span class="item-icon">${recipe.icon}</span><div style="flex:1"><div style="font-size:.38rem">${recipe.name}</div><div style="font-size:.32rem;color:#888;margin-top:2px">${recipe.desc}</div></div>${canCraft ? '<span style="font-size:.45rem;color:#0f0">✓</span>' : '<span style="font-size:.45rem;color:#600">✗</span>'}`;
+      if (canCraft) div.addEventListener('click', () => { Object.entries(recipe.needs).forEach(([k, v]) => { inventory[k] -= v; }); Hotbar.addItem(recipe.result); game.score += 200; addFloat(canvas.width / 2, canvas.height / 2, '⚒ ' + recipe.name); Crafting.render(inventory); HUD.update(getHUDState()); updateInvDisplay(); });
+      recEl.appendChild(div);
+    });
+  }
+};
+
+// ============================================ HUD ============================================
+const HUD = {
+  update(state) { document.getElementById('lives-val').textContent = state.lives; document.getElementById('score-val').textContent = state.score; document.getElementById('coins-val').textContent = state.coins; document.getElementById('level-val').textContent = state.level; document.getElementById('timer-val').textContent = Math.ceil(state.timer); document.getElementById('timer-val').style.color = state.timer < 30 ? '#ff3333' : '#ff9900'; }
+};
+
+function getHUDState() { return { lives: game.lives, score: game.score, coins: game.coinCount, level: game.levelIdx + 1, timer: game.timer }; }
+
+// ============================================ GAME CREATIE ============================================
+function createGame(levelIdx) {
+  let def = LEVEL_DEFS[levelIdx];
+  let map = def.map;
+  return {
+    levelIdx, def, map, state: 'playing', score: 0, coinCount: 0, lives: 3, timer: def.timeLimit, timerAcc: 0, starsCollected: 0,
+    inventory: { wood: 2, stone: 0, coal: 0, iron: 0, gold_ore: 0 },
+    player: { x: map.playerStart.x * TILE, y: map.playerStart.y * TILE, w: TILE - 4, h: TILE * 1.5, vx: 0, vy: 0, onGround: false, facingRight: true, invincible: 0, dead: false, animTick: 0, jumpBuffer: 0, coyoteTime: 0 },
+    enemies: map.enemies.map(e => ({ ...e, x: e.x * TILE, y: e.y * TILE, w: TILE - 2, h: TILE - 2, vx: e.t === 'b' ? (Math.random() > 0.5 ? 1 : -1) * 1.2 : -1.2, vy: 0, alive: true, animTick: 0 })),
+    coinItems: map.coins.map(c => ({ x: c[0] * TILE + 8, y: c[1] * TILE + 8, w: 16, h: 16, collected: false, anim: 0 })),
+    stars: map.stars.map(s => ({ x: s[0] * TILE + 4, y: s[1] * TILE + 4, w: 24, h: 24, collected: false, anim: 0 })),
+    cam: { x: 0, y: 0 }, mineBlock: null, mineProgress: 0, flagReached: false, floatTexts: [], coins_anim: []
+  };
+}
+
+// ============================================ COLLISIE FUNCTIES ============================================
+function moveX(entity, dx, mapData) {
+  entity.x += dx;
+  let txL = Math.floor(entity.x / TILE), txR = Math.floor((entity.x + entity.w - 1) / TILE);
+  let tyT = Math.floor(entity.y / TILE), tyB = Math.floor((entity.y + entity.h - 1) / TILE);
+  for (let ty = tyT; ty <= tyB; ty++) for (let tx = txL; tx <= txR; tx++) if (isSolid(tileAt(mapData, tx, ty))) {
+    if (dx > 0) entity.x = tx * TILE - entity.w; else entity.x = (tx + 1) * TILE;
+    entity.vx = 0;
+  }
+}
+function moveY(entity, dy, mapData) {
+  entity.vy = dy; entity.y += dy; entity.onGround = false;
+  let txL = Math.floor(entity.x / TILE), txR = Math.floor((entity.x + entity.w - 1) / TILE);
+  let tyT = Math.floor(entity.y / TILE), tyB = Math.floor((entity.y + entity.h - 1) / TILE);
+  for (let ty = tyT; ty <= tyB; ty++) for (let tx = txL; tx <= txR; tx++) {
+    let tile = tileAt(mapData, tx, ty);
+    if (isSolid(tile)) {
+      if (dy > 0) { entity.y = ty * TILE - entity.h; entity.vy = 0; entity.onGround = true; }
+      else { entity.y = (ty + 1) * TILE; entity.vy = 0; if (tile === T.COIN_BLOCK && game) { game.map.data[ty][tx] = T.BRICK; game.score += 100; game.coinCount++; HUD.update(getHUDState()); addFloat(tx * TILE + 16, ty * TILE - 4, '🪙+100'); game.coins_anim.push({ x: tx * TILE + 8, y: ty * TILE - 10, vy: -3, life: 40 }); } }
+    }
+  }
+  if (entity === game?.player) { if (entity.onGround) entity.coyoteTime = 8; else if (entity.coyoteTime > 0) entity.coyoteTime--; }
+}
+
+// ============================================ MIJNBOUW (WERKT!) ============================================
+function tryMine(player, mapData) {
+  let mineKey = keys['x'] || keys['X'];
+  if (!mineKey) { game.mineBlock = null; game.mineProgress = 0; return; }
+  let cx = player.x + player.w / 2, cy = player.y + player.h / 2, dir = player.facingRight ? 1 : -1;
+  let frontTX = Math.floor((cx + dir * TILE * 1.3) / TILE);
+  let candidates = [
+    [frontTX, Math.floor(player.y / TILE)],
+    [frontTX, Math.floor((player.y + player.h / 2) / TILE)],
+    [frontTX, Math.floor((player.y + player.h - 1) / TILE)],
+    [Math.floor(cx / TILE), Math.floor((player.y - 2) / TILE)],
+    [Math.floor((player.x + player.w / 2) / TILE), Math.floor((player.y + player.h + 2) / TILE)]
+  ];
+  let attacked = false;
+  game.enemies.forEach(e => { if (!e.alive) return; let dist = Math.abs((player.x + player.w / 2) - (e.x + e.w / 2)), distY = Math.abs((player.y + player.h / 2) - (e.y + e.h / 2)); if (dist < TILE * 1.5 && distY < TILE * 1.2) { e.alive = false; attacked = true; game.score += 300; addFloat(e.x - game.cam.x, e.y - game.cam.y, '💀+300'); HUD.update(getHUDState()); spawnParticles(e.x - game.cam.x + e.w / 2, e.y - game.cam.y, '#ff6600', 6); } });
+  if (attacked) { game.mineBlock = null; game.mineProgress = 0; return; }
+  let target = null;
+  for (let [bx, by] of candidates) { let tile = tileAt(mapData, bx, by); if (MINABLE.has(tile)) { target = [bx, by]; break; } }
+  if (!target) { game.mineBlock = null; game.mineProgress = 0; return; }
+  let [bx, by] = target;
+  if (game.mineBlock && (game.mineBlock[0] !== bx || game.mineBlock[1] !== by)) game.mineProgress = 0;
+  game.mineBlock = [bx, by];
+  if (!game._mineKeyWas) game._mineKeyWas = false;
+  let mineKeyNow = keys['x'] || keys['X'];
+  if (mineKeyNow && !game._mineKeyWas) {
+    game.mineProgress = (game.mineProgress || 0) + 1;
+    let tile = tileAt(mapData, bx, by);
+    let needed = tile===T.DIAMOND||tile===T.OBSIDIAN?6:tile===T.GOLD||tile===T.CRYSTAL?5:tile===T.IRON||tile===T.NICKEL||tile===T.COPPER?4:tile===T.STONE||tile===T.COAL?3:2;
+    if (game.mineProgress < needed) {
+      spawnParticles(bx * TILE - game.cam.x + 16, by * TILE - game.cam.y + 16, '#aaa', 3);
+      addFloat(bx * TILE + 16 - game.cam.x, by * TILE - game.cam.y, '⛏' + game.mineProgress + '/' + needed);
+    }
+    if (game.mineProgress >= needed) {
+      let drop = TILE_DROP[tile];
+      if (drop) { game.inventory[drop] = (game.inventory[drop] || 0) + 1; Hotbar.addItem(drop); spawnParticles(bx * TILE - game.cam.x + 16, by * TILE - game.cam.y + 16, '#FFD700', 10); addFloat(bx * TILE + 16 - game.cam.x, by * TILE - game.cam.y, '+' + drop); updateInvDisplay(); }
+      mapData.data[by][bx] = T.EMPTY;
+      game.score += 50; game.mineBlock = null; game.mineProgress = 0;
+      HUD.update(getHUDState());
+      if (Crafting._open) Crafting.render(game.inventory);
+    }
+  }
+  game._mineKeyWas = mineKeyNow;
+}
+
+// ============================================ VIJANDEN UPDATE ============================================
+function updateEnemies() {
+  game.enemies.forEach(e => {
+    if (!e.alive) return;
+    e.animTick++;
+    if (e.t === 'b') {
+      e.x += Math.sin(e.animTick * 0.05) * 1.8;
+      e.y += Math.cos(e.animTick * 0.04) * 1.0;
+      e.x = Math.max(TILE, Math.min(e.x, game.map.w * TILE - TILE));
+      e.y = Math.max(TILE, Math.min(e.y, game.map.h * TILE - TILE));
+    } else {
+      e.x += e.vx * PLAYER_SPEED * 0.55;
+      let txA = Math.floor(e.x / TILE), txB = Math.floor((e.x + e.w) / TILE);
+      let ty = Math.floor((e.y + e.h + 2) / TILE);
+      let txCheck = e.vx < 0 ? txA : txB;
+      let tyMid = Math.floor((e.y + e.h / 2) / TILE);
+      if (isSolid(tileAt(game.map, txCheck, tyMid)) || txA <= 0 || txB >= game.map.w - 1) e.vx *= -1;
+      let floorAhead = tileAt(game.map, e.vx < 0 ? txA : txB, ty);
+      if (!isSolid(floorAhead) && e.onGround) e.vx *= -1;
+      e.vy = (e.vy || 0) + GRAVITY * 0.6;
+      e.y += e.vy;
+      let tyB2 = Math.floor((e.y + e.h) / TILE);
+      let txM = Math.floor((e.x + e.w / 2) / TILE);
+      if (isSolid(tileAt(game.map, txM, tyB2))) { e.y = tyB2 * TILE - e.h; e.vy = 0; e.onGround = true; } else e.onGround = false;
+      e.x = Math.max(0, Math.min(e.x, game.map.w * TILE - e.w));
+      e.y = Math.max(0, Math.min(e.y, game.map.h * TILE - e.h));
+    }
+  });
+}
+
+function checkPlayerEnemies() {
+  let p = game.player;
+  if (p.invincible > 0) { p.invincible--; return; }
+  game.enemies.forEach(e => {
+    if (!e.alive) return;
+    if (p.x + p.w > e.x && p.x < e.x + e.w && p.y + p.h > e.y && p.y < e.y + e.h) {
+      let playerFeet = p.y + p.h, enemyCenter = e.y + e.h / 2, playerCenter = p.y + p.h / 2;
+      if (p.vy > 0 && playerFeet <= enemyCenter + 10 && playerCenter < e.y + e.h) {
+        e.alive = false; p.vy = JUMP_FORCE * 0.65; p.onGround = false;
+        game.score += 300; addFloat(e.x - game.cam.x, e.y - game.cam.y - 20, '💀+300');
+        HUD.update(getHUDState()); spawnParticles(e.x - game.cam.x + e.w / 2, e.y - game.cam.y, e.t === 'k' ? '#00cc00' : '#ff6600', 8);
+      } else if (p.invincible === 0) {
+        game.lives--; p.invincible = 150; p.vx = p.facingRight ? -5 : 5; p.vy = JUMP_FORCE * 0.5;
+        HUD.update(getHUDState()); addFloat(p.x - game.cam.x, p.y - game.cam.y - 20, '💔-1');
+        if (game.lives <= 0) p.dead = true;
+      }
+    }
+  });
+}
+
+function checkCollectibles() {
+  let p = game.player;
+  game.coinItems.forEach(c => { if (!c.collected && p.x + p.w > c.x && p.x < c.x + c.w && p.y + p.h > c.y && p.y < c.y + c.h) { c.collected = true; game.coinCount++; game.score += 100; addFloat(c.x - game.cam.x, c.y - game.cam.y - 16, '🪙+100'); HUD.update(getHUDState()); } });
+  game.stars.forEach(s => { if (!s.collected && p.x + p.w > s.x && p.x < s.x + s.w && p.y + p.h > s.y && p.y < s.y + s.h) { s.collected = true; game.starsCollected++; game.score += 500; addFloat(s.x - game.cam.x, s.y - game.cam.y - 20, '⭐+500!'); HUD.update(getHUDState()); } });
+}
+
+function checkSpecialTiles() {
+  let p = game.player;
+  let txL = Math.floor(p.x / TILE), txR = Math.floor((p.x + p.w - 1) / TILE), tyT = Math.floor(p.y / TILE), tyB = Math.floor((p.y + p.h - 1) / TILE);
+  for (let ty = tyT; ty <= tyB; ty++) for (let tx = txL; tx <= txR; tx++) { let t = tileAt(game.map, tx, ty); if (t === T.FLAG && !game.flagReached) { game.flagReached = true; winLevel(); } if (t === T.LAVA && p.invincible === 0) { game.lives--; p.invincible = 150; p.vy = JUMP_FORCE; HUD.update(getHUDState()); addFloat(p.x - game.cam.x, p.y - game.cam.y - 20, '🔥LAVA!'); if (game.lives <= 0) p.dead = true; } }
+}
+
+// ============================================ WIN/LOSE ============================================
+function winLevel() {
+  game.state = 'win';
+  let starsGot = game.starsCollected;
+  let timeBonus = Math.floor(game.timer) * 10;
+  game.score += timeBonus;
+  let totalStars = Math.min(3, starsGot + (game.timer > 60 ? 1 : 0) + (game.lives > 1 ? 1 : 0));
+  let unlocked = parseInt(localStorage.getItem('mc_unlocked') || '0');
+  if (game.levelIdx >= unlocked) localStorage.setItem('mc_unlocked', game.levelIdx + 1);
+  localStorage.setItem('mc_level_' + game.levelIdx, JSON.stringify({ stars: totalStars, score: game.score }));
+  cancelAnimationFrame(rafId);
+  showEndScreen(true, game.score, totalStars, game.levelIdx < LEVEL_DEFS.length - 1);
+}
+function loseLevel() { game.state = 'lose'; cancelAnimationFrame(rafId); showEndScreen(false, game.score, 0, false); }
+
+// ============================================ UPDATE LOOP ============================================
+function update(dt) {
+  if (game.state !== 'playing') return;
+  let p = game.player, m = game.map;
+  game.timerAcc += dt;
+  if (game.timerAcc >= FPS) { game.timerAcc = 0; game.timer--; HUD.update(getHUDState()); if (game.timer <= 0) { game.lives = 0; p.dead = true; } }
+  if (p.dead) { p.vy += GRAVITY; p.y += p.vy; if (p.y > m.h * TILE + 100) loseLevel(); return; }
+  let ax = 0;
+  if (keys['ArrowLeft']) { ax = -PLAYER_SPEED; p.facingRight = false; }
+  if (keys['ArrowRight']) { ax = PLAYER_SPEED; p.facingRight = true; }
+  p.vx += (ax - p.vx) * 0.25;
+  moveX(p, p.vx, m);
+  let jumpKey = keys['z'] || keys['Z'] || keys['ArrowUp'] || keys[' '];
+  if (jumpKey) p.jumpBuffer = 8;
+  if (p.jumpBuffer > 0) p.jumpBuffer--;
+  if (p.jumpBuffer > 0 && (p.onGround || p.coyoteTime > 0)) { p.vy = JUMP_FORCE; p.onGround = false; p.coyoteTime = 0; p.jumpBuffer = 0; }
+  if (!jumpKey && p.vy < -4) p.vy *= 0.85;
+  p.vy = Math.min(p.vy + GRAVITY, 16);
+  moveY(p, p.vy, m);
+  if (p.y > m.h * TILE) { game.lives--; HUD.update(getHUDState()); if (game.lives <= 0) p.dead = true; else { p.x = m.playerStart.x * TILE; p.y = m.playerStart.y * TILE; p.vx = 0; p.vy = 0; p.invincible = 150; } }
+  tryMine(p, m);
+  updateEnemies();
+  checkPlayerEnemies();
+  checkCollectibles();
+  checkSpecialTiles();
+  game.cam.x = Math.max(0, Math.min(p.x + p.w / 2 - canvas.width / 2, m.w * TILE - canvas.width));
+  game.cam.y = Math.max(0, Math.min(p.y + p.h / 2 - canvas.height / 2, m.h * TILE - canvas.height));
+  game.coins_anim = game.coins_anim.filter(c => { c.y += c.vy; c.vy += 0.2; c.life--; return c.life > 0; });
+  game.floatTexts = game.floatTexts.filter(f => { f.y += f.vy; f.life--; return f.life > 0; });
+  game.coinItems.forEach(c => { if (!c.collected) c.anim += 0.1; });
+  game.stars.forEach(s => { if (!s.collected) s.anim += 0.07; });
+  p.animTick++;
+  if (Math.abs(p.vx) > 0.3) { if (p.animTick % 8 === 0) p.animFrame = (p.animFrame + 1) % 4; } else p.animFrame = 0;
+}
+
+// ============================================ DRAW FUNCTIES ============================================
+function drawTile(ctx, t, tx, ty) {
+  const x = tx * TILE, y = ty * TILE, S = TILE;
+  switch(t) {
+    case T.GRASS: {
+      // Dirt body
+      ctx.fillStyle='#8B5E3C'; ctx.fillRect(x,y+6,S,S-6);
+      // Grass top
+      ctx.fillStyle='#4CAF50'; ctx.fillRect(x,y,S,8);
+      ctx.fillStyle='#66BB6A'; ctx.fillRect(x,y,S,4);
+      // Grass highlights
+      ctx.fillStyle='#81C784';
+      for(let i=0;i<S;i+=4){ctx.fillRect(x+i,y,2,3);}
+      // Dirt texture
+      ctx.fillStyle='#7A5230';
+      ctx.fillRect(x+6,y+12,3,3); ctx.fillRect(x+16,y+18,4,3); ctx.fillRect(x+24,y+14,3,3);
+      break;
+    }
+    case T.DIRT: {
+      ctx.fillStyle='#8B5E3C'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#7A5230';
+      ctx.fillRect(x+4,y+5,4,4); ctx.fillRect(x+18,y+14,3,3); ctx.fillRect(x+10,y+22,4,3); ctx.fillRect(x+24,y+8,3,4);
+      ctx.fillStyle='#9C6E48';
+      ctx.fillRect(x+1,y+1,S-2,2);
+      break;
+    }
+    case T.STONE: {
+      ctx.fillStyle='#7E7E7E'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#6A6A6A';
+      ctx.fillRect(x,y,S/2,S/2); ctx.fillRect(x+S/2,y+S/2,S/2,S/2);
+      ctx.fillStyle='#909090';
+      ctx.fillRect(x+1,y+1,S/2-2,S/2-2); ctx.fillRect(x+S/2+1,y+S/2+1,S/2-2,S/2-2);
+      ctx.fillStyle='#5A5A5A';
+      ctx.fillRect(x,y+S/2,1,S/2); ctx.fillRect(x+S/2,y,1,S/2);
+      break;
+    }
+    case T.WOOD: {
+      // Wood grain
+      ctx.fillStyle='#8B5E2C'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#7A4E1E';
+      for(let i=0;i<S;i+=5){ctx.fillRect(x,y+i,S,2);}
+      ctx.fillStyle='#9C6E3C';
+      ctx.fillRect(x+S/2-1,y,2,S);
+      ctx.fillStyle='#A07840';
+      ctx.fillRect(x+1,y+1,3,3);
+      break;
+    }
+    case T.LEAVES: {
+      ctx.fillStyle='#2E7D32'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#388E3C';
+      ctx.fillRect(x+2,y+2,6,6); ctx.fillRect(x+14,y+5,7,6); ctx.fillRect(x+6,y+14,8,7); ctx.fillRect(x+20,y+18,8,6);
+      ctx.fillStyle='#1B5E20';
+      ctx.fillRect(x+8,y+8,5,5); ctx.fillRect(x+22,y+4,5,4);
+      ctx.fillStyle='#4CAF50';
+      ctx.fillRect(x+4,y+4,2,2); ctx.fillRect(x+18,y+10,2,2);
+      break;
+    }
+    case T.COAL: {
+      ctx.fillStyle='#5A5A5A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#222';
+      ctx.fillRect(x+4,y+4,12,12); ctx.fillRect(x+16,y+14,10,10);
+      ctx.fillStyle='#888';
+      ctx.fillRect(x+6,y+6,4,4); ctx.fillRect(x+18,y+16,3,3);
+      ctx.fillStyle='#444';
+      ctx.fillRect(x+1,y+1,S-2,2);
+      break;
+    }
+    case T.IRON: {
+      ctx.fillStyle='#8A8A8A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#C0703C';
+      ctx.fillRect(x+4,y+6,8,8); ctx.fillRect(x+16,y+14,9,8); ctx.fillRect(x+8,y+20,7,7);
+      ctx.fillStyle='#E08050';
+      ctx.fillRect(x+5,y+7,4,4); ctx.fillRect(x+17,y+15,4,4);
+      ctx.fillStyle='#999';
+      ctx.fillRect(x+1,y+1,S-2,2);
+      break;
+    }
+    case T.GOLD: {
+      ctx.fillStyle='#8A8A7A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#FFD700';
+      ctx.fillRect(x+3,y+5,10,10); ctx.fillRect(x+16,y+14,11,10); ctx.fillRect(x+6,y+20,8,8);
+      ctx.fillStyle='#FFE842';
+      ctx.fillRect(x+4,y+6,5,5); ctx.fillRect(x+17,y+15,5,5);
+      ctx.fillStyle='#CC9900';
+      ctx.fillRect(x+8,y+10,4,4);
+      break;
+    }
+    case T.NICKEL: {
+      ctx.fillStyle='#8A8A8A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#B0C4DE';
+      ctx.fillRect(x+4,y+4,10,10); ctx.fillRect(x+16,y+15,10,9);
+      ctx.fillStyle='#D0D8E8';
+      ctx.fillRect(x+5,y+5,5,5); ctx.fillRect(x+17,y+16,4,4);
+      ctx.fillStyle='#7090AA';
+      ctx.fillRect(x+10,y+12,4,4);
+      break;
+    }
+    case T.COPPER: {
+      ctx.fillStyle='#7A6A5A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#B87333';
+      ctx.fillRect(x+3,y+5,11,10); ctx.fillRect(x+16,y+14,10,10);
+      ctx.fillStyle='#D4884A';
+      ctx.fillRect(x+4,y+6,5,5); ctx.fillRect(x+17,y+15,5,5);
+      ctx.fillStyle='#4A9A7A'; // verdigris
+      ctx.fillRect(x+8,y+10,5,4); ctx.fillRect(x+20,y+20,5,4);
+      break;
+    }
+    case T.DIAMOND: {
+      ctx.fillStyle='#2A3A4A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#00E5FF';
+      ctx.fillRect(x+5,y+5,8,8); ctx.fillRect(x+16,y+14,9,9);
+      ctx.fillStyle='#80F0FF';
+      ctx.fillRect(x+6,y+6,3,3); ctx.fillRect(x+17,y+15,3,3);
+      ctx.fillStyle='#006080';
+      ctx.fillRect(x+10,y+12,5,5);
+      // Sparkle
+      ctx.fillStyle='#FFFFFF';
+      ctx.fillRect(x+7,y+7,1,1); ctx.fillRect(x+18,y+16,1,1);
+      break;
+    }
+    case T.OBSIDIAN: {
+      ctx.fillStyle='#1A0A2E'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#2A1040';
+      ctx.fillRect(x+2,y+2,S-4,S-4);
+      ctx.fillStyle='#4A1080';
+      ctx.fillRect(x+8,y+8,8,8); ctx.fillRect(x+18,y+18,8,6);
+      ctx.fillStyle='#6020A0';
+      ctx.fillRect(x+9,y+9,3,3);
+      break;
+    }
+    case T.CRYSTAL: {
+      ctx.fillStyle='#1A2A3A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#A020F0';
+      ctx.fillRect(x+6,y+4,6,14); ctx.fillRect(x+16,y+6,8,12);
+      ctx.fillStyle='#CC60FF';
+      ctx.fillRect(x+7,y+5,3,6); ctx.fillRect(x+17,y+7,4,5);
+      ctx.fillStyle='#FF80FF';
+      ctx.fillRect(x+8,y+6,1,3); ctx.fillRect(x+18,y+8,2,3);
+      break;
+    }
+    case T.SAND: {
+      ctx.fillStyle='#C8B06A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#D4BC78';
+      ctx.fillRect(x+2,y+2,4,4); ctx.fillRect(x+12,y+8,5,4); ctx.fillRect(x+20,y+18,4,5);
+      ctx.fillStyle='#B8A058';
+      ctx.fillRect(x+8,y+14,4,4); ctx.fillRect(x+24,y+6,4,3);
+      break;
+    }
+    case T.SANDSTONE: {
+      ctx.fillStyle='#C8A84A'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#B89040';
+      for(let i=0;i<S;i+=8){ctx.fillRect(x,y+i,S,1);}
+      ctx.fillStyle='#DAB85A';
+      ctx.fillRect(x+1,y+1,S-2,3);
+      break;
+    }
+    case T.SNOW: {
+      ctx.fillStyle='#D8E8F0'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#E8F4FF';
+      ctx.fillRect(x,y,S,6);
+      ctx.fillStyle='#C0D4E0';
+      ctx.fillRect(x+4,y+10,4,4); ctx.fillRect(x+18,y+16,5,4);
+      break;
+    }
+    case T.ICE: {
+      ctx.fillStyle='#90C8E0'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='rgba(255,255,255,0.4)';
+      ctx.fillRect(x+2,y+2,10,10); ctx.fillRect(x+16,y+14,12,12);
+      ctx.fillStyle='#70A8C8';
+      ctx.fillRect(x+8,y+8,6,6);
+      ctx.fillStyle='rgba(255,255,255,0.6)';
+      ctx.fillRect(x+3,y+3,3,3);
+      break;
+    }
+    case T.BRICK: {
+      ctx.fillStyle='#B04020'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#804020';
+      ctx.fillRect(x,y+S/2,S,2); ctx.fillRect(x,y,S,2);
+      ctx.fillRect(x+S/2,y+2,2,S/2-2); ctx.fillRect(x,y+S/2+2,2,S/2-2);
+      ctx.fillRect(x+S/2,y+S/2+2,2,S/2-2);
+      ctx.fillStyle='#CC5030';
+      ctx.fillRect(x+2,y+2,S/2-4,S/2-4); ctx.fillRect(x+S/2+2,y+S/2+2,S/2-4,S/2-4);
+      break;
+    }
+    case T.CLOUD: {
+      ctx.fillStyle='#EEEEFF'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#FFFFFF';
+      ctx.fillRect(x+2,y+2,S-4,S/2);
+      ctx.fillStyle='#D8D8EE';
+      ctx.fillRect(x,y+S/2,S,S/2);
+      ctx.fillStyle='rgba(200,200,220,0.5)';
+      ctx.fillRect(x+4,y+S/2+4,6,4); ctx.fillRect(x+16,y+S/2+6,8,4);
+      break;
+    }
+    case T.COIN_BLOCK: {
+      ctx.fillStyle='#E8A000'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#C88000';
+      ctx.fillRect(x,y,S,3); ctx.fillRect(x,y+S-3,S,3);
+      ctx.fillRect(x,y,3,S); ctx.fillRect(x+S-3,y,3,S);
+      ctx.fillStyle='#FFD700';
+      ctx.fillRect(x+4,y+4,S-8,S-8);
+      ctx.fillStyle='#FFF';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('?', x+S/2, y+S/2+1);
+      break;
+    }
+    case T.PIPE_T: {
+      ctx.fillStyle='#1E8020'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#28A028';
+      ctx.fillRect(x+2,y+2,S-4,4);
+      ctx.fillStyle='#148018';
+      ctx.fillRect(x,y,2,S); ctx.fillRect(x+S-2,y,2,S);
+      ctx.fillStyle='#3ACC3A';
+      ctx.fillRect(x+4,y+4,4,S-4);
+      break;
+    }
+    case T.PIPE_B: {
+      ctx.fillStyle='#1E8020'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#148018';
+      ctx.fillRect(x,y,2,S); ctx.fillRect(x+S-2,y,2,S);
+      ctx.fillStyle='#3ACC3A';
+      ctx.fillRect(x+4,y,4,S);
+      break;
+    }
+    case T.LAVA: {
+      let t2 = game ? game.tickCount || 0 : 0;
+      ctx.fillStyle='#CC3000'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#FF5500';
+      ctx.fillRect(x,y,S,S/2+Math.sin(t2*0.05+tx)*4);
+      ctx.fillStyle='#FF8800';
+      ctx.fillRect(x+4,y+4,8,6); ctx.fillRect(x+18,y+8,8,6);
+      ctx.fillStyle='#FFAA00';
+      ctx.fillRect(x+6,y+5,3,3); ctx.fillRect(x+20,y+9,3,3);
+      break;
+    }
+    case T.FLAG: {
+      ctx.fillStyle='#888'; ctx.fillRect(x+14,y,3,S);
+      ctx.fillStyle='#FF3333';
+      ctx.fillRect(x+17,y+2,12,10);
+      ctx.fillStyle='#FF6666';
+      ctx.fillRect(x+18,y+3,6,4);
+      break;
+    }
+    case T.CORAL: {
+      ctx.fillStyle='#C84848'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#FF7070';
+      ctx.fillRect(x+6,y+2,4,S-4); ctx.fillRect(x+18,y+4,4,S-6);
+      ctx.fillRect(x+4,y+8,14,4); ctx.fillRect(x+6,y+18,12,4);
+      ctx.fillStyle='#FF9090';
+      ctx.fillRect(x+7,y+3,2,4);
+      break;
+    }
+    case T.MUSHROOM_BLOCK: {
+      ctx.fillStyle='#CC3030'; ctx.fillRect(x,y,S,S);
+      ctx.fillStyle='#FFFFFF';
+      ctx.fillRect(x+4,y+4,8,8); ctx.fillRect(x+18,y+14,8,8); ctx.fillRect(x+4,y+18,6,6);
+      ctx.fillStyle='#EE4040';
+      ctx.fillRect(x+6,y+6,4,4); ctx.fillRect(x+20,y+16,4,4);
+      break;
+    }
+    default: {
+      ctx.fillStyle='#666'; ctx.fillRect(x,y,S,S);
+    }
+  }
+  // Mining crack overlay
+  if(game && game.mineBlock && game.mineBlock[0]===tx && game.mineBlock[1]===ty && game.mineProgress>0) {
+    let tile = t;
+    let needed = tile===T.DIAMOND||tile===T.OBSIDIAN?6:tile===T.GOLD||tile===T.CRYSTAL?5:tile===T.IRON||tile===T.NICKEL?4:tile===T.STONE||tile===T.COAL||tile===T.COPPER?3:2;
+    let pct = game.mineProgress/needed;
+    ctx.fillStyle = `rgba(0,0,0,${pct*0.5})`;
+    ctx.fillRect(x,y,S,S);
+    ctx.strokeStyle=`rgba(0,0,0,${pct*0.8})`;
+    ctx.lineWidth=1;
+    if(pct>0.3){ctx.beginPath();ctx.moveTo(x+4,y+4);ctx.lineTo(x+12,y+14);ctx.stroke();}
+    if(pct>0.5){ctx.beginPath();ctx.moveTo(x+18,y+6);ctx.lineTo(x+8,y+20);ctx.stroke();}
+    if(pct>0.7){ctx.beginPath();ctx.moveTo(x+2,y+18);ctx.lineTo(x+20,y+24);ctx.stroke();}
+  }
+}
+
+function drawBackground(W, H) {
+  let def = game.def;
+  // Sky gradient
+  let grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, def.bgColor); grad.addColorStop(1, def.bgColor2);
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  // Parallax clouds
+  if(def.clouds) {
+    if(!game.bgClouds) {
+      game.bgClouds = Array.from({length:6},(_,i)=>({x:i*(W/6)*1.2,y:20+i*18%60,w:60+i*22,h:24+i*8,spd:0.2+i*0.08}));
+    }
+    game.bgClouds.forEach(c => {
+      c.x -= c.spd * (game.cam.x/canvas.width * 0.3 + 0.2);
+      if(c.x + c.w < 0) c.x = W + c.w;
+      let px = c.x, py = c.y;
+      ctx.fillStyle='rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      ctx.ellipse(px+c.w/2,py+c.h/2,c.w/2,c.h/2,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.4)';
+      ctx.beginPath();
+      ctx.ellipse(px+c.w*0.3,py+c.h*0.4,c.w*0.35,c.h*0.55,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(px+c.w*0.72,py+c.h*0.38,c.w*0.3,c.h*0.5,0,0,Math.PI*2);
+      ctx.fill();
+    });
+  }
+  // Parallax far mountains for cave/nether
+  if(!def.clouds && def.bgColor !== '#87CEEB') {
+    ctx.fillStyle='rgba(255,255,255,0.03)';
+    let mx = game.cam.x*0.15;
+    for(let i=0;i<8;i++){
+      let bx=(i*90-mx%90)%W, bh=40+i*12%30;
+      ctx.fillRect(bx,H-bh,80,bh);
+    }
+  }
+}
+
+function drawPlayer(p) {
+  let x=p.x, y=p.y, fr=p.animFrame||0, right=p.facingRight!==false;
+  let flip = !right;
+  ctx.save();
+  if(flip){ctx.translate(x+p.w,y);ctx.scale(-1,1);}else{ctx.translate(x,y);}
+  // Shoes
+  ctx.fillStyle='#2244AA';
+  ctx.fillRect(0,24,12,8); ctx.fillRect(16,24,12,8);
+  // Legs
+  ctx.fillStyle='#1133AA';
+  ctx.fillRect(2,18,10,8); ctx.fillRect(16,18,10,8);
+  // Body
+  ctx.fillStyle='#DD2222';
+  ctx.fillRect(0,10,p.w,10);
+  // Buttons
+  ctx.fillStyle='#FFD700';
+  ctx.fillRect(4,13,3,3); ctx.fillRect(p.w-7,13,3,3);
+  // Head
+  ctx.fillStyle='#FFDAB9';
+  ctx.fillRect(4,2,p.w-8,10);
+  // Hat
+  ctx.fillStyle='#DD2222';
+  ctx.fillRect(2,0,p.w-4,5);
+  ctx.fillRect(0,4,p.w,3);
+  // Eyes
+  ctx.fillStyle='#000';
+  ctx.fillRect(7,5,3,3); ctx.fillRect(p.w-10,5,3,3);
+  // Pupils (white dot)
+  ctx.fillStyle='#FFF';
+  ctx.fillRect(8,6,1,1); ctx.fillRect(p.w-9,6,1,1);
+  // Mustache
+  ctx.fillStyle='#4A2800';
+  ctx.fillRect(5,9,p.w-10,3);
+  // Arm animation
+  let armY = p.onGround ? (fr%2===0?12:14) : 10;
+  ctx.fillStyle='#FFDAB9';
+  ctx.fillRect(-4,armY,4,8); ctx.fillRect(p.w,armY,4,8);
+  // Mining swing
+  if(game && (game._mineKeyWas)) {
+    ctx.fillStyle='#888';
+    ctx.fillRect(p.w-2,8,14,4);
+    ctx.fillStyle='#666';
+    ctx.fillRect(p.w+6,4,8,8);
+  }
+  ctx.restore();
+  // Invincibility flash
+  if(p.invincible>0 && Math.floor(p.invincible/6)%2===0) {
+    ctx.globalAlpha=0.4;
+    ctx.fillStyle='#fff';
+    ctx.fillRect(x,y,p.w,p.h);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawEnemy(e) {
+  if(!e.alive) return;
+  let x=e.x, y=e.y, w=e.w, h=e.h;
+  let tk = Math.floor(e.animTick/10)%2;
+  if(e.t==='g') {
+    // Goomba - brown mushroom enemy
+    ctx.fillStyle='#8B4513'; ctx.fillRect(x,y+4,w,h-4);
+    ctx.fillStyle='#A0522D'; ctx.fillRect(x+2,y+4,w-4,6);
+    // Cap
+    ctx.fillStyle='#8B4513'; ctx.fillRect(x-2,y,w+4,8);
+    ctx.fillStyle='#6B3010'; ctx.fillRect(x,y,w,6);
+    // Eyes
+    ctx.fillStyle='#FFF'; ctx.fillRect(x+4,y+6,5,5); ctx.fillRect(x+w-9,y+6,5,5);
+    ctx.fillStyle='#000'; ctx.fillRect(x+5,y+7,3,3); ctx.fillRect(x+w-8,y+7,3,3);
+    // Angry brow
+    ctx.fillStyle='#000'; ctx.fillRect(x+3,y+5,6,2); ctx.fillRect(x+w-9,y+5,6,2);
+    // Feet walk
+    ctx.fillStyle='#6B3010';
+    ctx.fillRect(x+(tk?2:0),y+h-6,10,6); ctx.fillRect(x+w-12+(tk?0:2),y+h-6,10,6);
+  } else if(e.t==='k') {
+    // Koopa - turtle
+    ctx.fillStyle='#228B22'; ctx.fillRect(x,y+8,w,h-8);
+    // Shell
+    ctx.fillStyle='#006400'; ctx.fillRect(x+2,y+4,w-4,18);
+    ctx.fillStyle='#228B22';
+    ctx.fillRect(x+4,y+6,w-8,14);
+    // Shell lines
+    ctx.fillStyle='#004400';
+    ctx.fillRect(x+w/2-1,y+5,2,17); ctx.fillRect(x+3,y+13,w-6,2);
+    // Head
+    ctx.fillStyle='#90EE90'; ctx.fillRect(x+4,y,w-8,10);
+    ctx.fillStyle='#000'; ctx.fillRect(x+7,y+3,3,3); ctx.fillRect(x+w-10,y+3,3,3);
+    ctx.fillStyle='#FFF'; ctx.fillRect(x+8,y+4,1,1);
+    // Feet
+    ctx.fillStyle='#006400';
+    ctx.fillRect(x+(tk?0:2),y+h-6,8,6); ctx.fillRect(x+w-10+(tk?2:0),y+h-6,8,6);
+  } else {
+    // Bat - purple flying
+    ctx.fillStyle='#553388'; ctx.fillRect(x+4,y+4,w-8,h-8);
+    // Wings
+    ctx.fillStyle='#7744AA';
+    ctx.fillRect(x-(tk?2:0),y+2,10,12); ctx.fillRect(x+w-10+(tk?2:0),y+2,10,12);
+    ctx.fillStyle='#9966CC';
+    ctx.fillRect(x-(tk?2:0)+2,y+4,6,6); ctx.fillRect(x+w-8+(tk?2:0),y+4,6,6);
+    // Face
+    ctx.fillStyle='#8855AA'; ctx.fillRect(x+4,y+2,w-8,h-4);
+    ctx.fillStyle='#FF2020'; ctx.fillRect(x+6,y+6,4,4); ctx.fillRect(x+w-10,y+6,4,4);
+    ctx.fillStyle='#FFF'; ctx.fillRect(x+7,y+7,2,2); ctx.fillRect(x+w-9,y+7,2,2);
+    // Fangs
+    ctx.fillStyle='#FFF'; ctx.fillRect(x+8,y+h-6,2,4); ctx.fillRect(x+w-10,y+h-6,2,4);
+  }
+}
+
+function drawCoin(c) {
+  if(c.collected) return;
+  let bob = Math.sin(c.anim)*3;
+  let x=c.x, y=c.y+bob;
+  // Coin glow
+  ctx.fillStyle='rgba(255,215,0,0.15)';
+  ctx.beginPath(); ctx.arc(x+8,y+8,12,0,Math.PI*2); ctx.fill();
+  // Coin body
+  let cg = ctx.createRadialGradient(x+6,y+6,1,x+8,y+8,8);
+  cg.addColorStop(0,'#FFF176'); cg.addColorStop(0.5,'#FFD700'); cg.addColorStop(1,'#CC9900');
+  ctx.fillStyle=cg;
+  ctx.beginPath(); ctx.arc(x+8,y+8,7,0,Math.PI*2); ctx.fill();
+  // Shine
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.beginPath(); ctx.arc(x+6,y+6,2,0,Math.PI*2); ctx.fill();
+}
+
+function drawStar(s) {
+  if(s.collected) return;
+  let bob = Math.sin(s.anim)*4;
+  let x=s.x+6, y=s.y+6+bob;
+  // Glow
+  ctx.fillStyle='rgba(255,220,0,0.2)';
+  ctx.beginPath(); ctx.arc(x,y,14,0,Math.PI*2); ctx.fill();
+  // Star shape (5-point)
+  ctx.fillStyle='#FFD700';
+  ctx.save(); ctx.translate(x,y);
+  ctx.beginPath();
+  for(let i=0;i<5;i++){
+    let a=i*Math.PI*2/5-Math.PI/2;
+    let ia=a+Math.PI/5;
+    if(i===0)ctx.moveTo(Math.cos(a)*10,Math.sin(a)*10);
+    else ctx.lineTo(Math.cos(a)*10,Math.sin(a)*10);
+    ctx.lineTo(Math.cos(ia)*4,Math.sin(ia)*4);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#FFFAAA';
+  ctx.beginPath();
+  for(let i=0;i<5;i++){
+    let a=i*Math.PI*2/5-Math.PI/2;
+    let ia=a+Math.PI/5;
+    if(i===0)ctx.moveTo(Math.cos(a)*5,Math.sin(a)*5);
+    else ctx.lineTo(Math.cos(a)*5,Math.sin(a)*5);
+    ctx.lineTo(Math.cos(ia)*2,Math.sin(ia)*2);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function draw() {
+  if(!game) return;
+  let W = canvas.width, H = canvas.height;
+  game.tickCount = (game.tickCount||0)+1;
+  ctx.clearRect(0, 0, W, H);
+  drawBackground(W, H);
+  ctx.save(); ctx.translate(-Math.floor(game.cam.x), -Math.floor(game.cam.y));
+  let startX=Math.max(0,Math.floor(game.cam.x/TILE)-1),endX=Math.min(game.map.w,Math.floor((game.cam.x+W)/TILE)+2);
+  let startY=Math.max(0,Math.floor(game.cam.y/TILE)-1),endY=Math.min(game.map.h,Math.floor((game.cam.y+H)/TILE)+2);
+  for(let ty=startY;ty<endY;ty++) for(let tx=startX;tx<endX;tx++){
+    let t=game.map.data[ty][tx]; if(t===T.EMPTY) continue;
+    drawTile(ctx,t,tx,ty);
+  }
+  game.coinItems.forEach(c=>drawCoin(c));
+  game.stars.forEach(s=>drawStar(s));
+  game.enemies.forEach(e=>drawEnemy(e));
+  drawPlayer(game.player);
+  ctx.restore();
+  // Float texts
+  game.floatTexts.forEach(f=>{
+    ctx.globalAlpha=Math.min(1,f.life/30);
+    ctx.font='bold 10px "Press Start 2P",monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.strokeStyle='#000'; ctx.lineWidth=3;
+    ctx.strokeText(f.text,f.x,f.y);
+    ctx.fillStyle='#FFD700'; ctx.fillText(f.text,f.x,f.y);
+    ctx.globalAlpha=1;
+  });
+}
+
+function loop(ts) { let dt = Math.min((ts - lastTime) / 1000, 0.05) * FPS; lastTime = ts; update(dt); draw(); if (game && game.state === 'playing') rafId = requestAnimationFrame(loop); }
+
+// ============================================ UI FUNCTIES ============================================
+function initCanvas() { canvas = document.getElementById('game-canvas'); ctx = canvas.getContext('2d'); resizeCanvas(); window.addEventListener('resize', resizeCanvas); }
+function resizeCanvas() { if (!canvas) return; let rect = canvas.getBoundingClientRect(); canvas.width = Math.floor(rect.width); canvas.height = Math.floor(rect.height); }
+function showEndScreen(win, score, stars, hasNext) { let overlay = document.getElementById('end-overlay'), panel = overlay.querySelector('.end-panel'); overlay.classList.remove('hidden'); document.getElementById('end-score').textContent = score; document.getElementById('end-stars').innerHTML = '⭐'.repeat(stars) + '☆'.repeat(3 - stars); if (win) { document.getElementById('end-title').textContent = '🎉 GEWONNEN!'; panel.classList.add('win'); panel.style.borderColor = '#FFD700'; document.getElementById('btn-next-level').style.display = hasNext ? 'block' : 'none'; } else { document.getElementById('end-title').textContent = '💀 GAME OVER'; panel.classList.remove('win'); panel.style.borderColor = '#E52222'; document.getElementById('btn-next-level').style.display = 'none'; } }
+function renderLevelSelect() { let grid = document.getElementById('levels-grid'); grid.innerHTML = ''; LEVEL_DEFS.forEach((lvl, i) => { let saved = JSON.parse(localStorage.getItem('mc_level_' + i) || '{"stars":0}'); let card = document.createElement('div'); card.className = 'level-card'; card.innerHTML = `<div class="level-num">${i + 1}</div><div class="level-name">${lvl.name}</div><span class="level-world ${lvl.worldClass}">${lvl.world}</span><div class="level-stars">${'⭐'.repeat(saved.stars)}${'☆'.repeat(3 - saved.stars)}</div>`; card.addEventListener('click', () => window.startLevel(i)); grid.appendChild(card); }); }
+function drawMenuCharacter() { let c = document.getElementById('preview-canvas'); if (!c) return; let ctx2 = c.getContext('2d'); ctx2.clearRect(0,0,64,64); ctx2.fillStyle='#2244AA'; ctx2.fillRect(8,48,18,12); ctx2.fillRect(38,48,18,12); ctx2.fillStyle='#1133AA'; ctx2.fillRect(12,36,14,14); ctx2.fillRect(38,36,14,14); ctx2.fillStyle='#DD2222'; ctx2.fillRect(8,22,48,16); ctx2.fillStyle='#FFD700'; ctx2.fillRect(12,27,5,5); ctx2.fillRect(47,27,5,5); ctx2.fillStyle='#FFDAB9'; ctx2.fillRect(14,8,36,16); ctx2.fillStyle='#DD2222'; ctx2.fillRect(10,4,44,10); ctx2.fillRect(8,10,48,6); ctx2.fillStyle='#000'; ctx2.fillRect(18,12,6,6); ctx2.fillRect(40,12,6,6); ctx2.fillStyle='#FFF'; ctx2.fillRect(19,13,2,2); ctx2.fillRect(41,13,2,2); ctx2.fillStyle='#4A2800'; ctx2.fillRect(14,20,36,5); ctx2.fillStyle='#FFDAB9'; ctx2.fillRect(0,26,8,14); ctx2.fillRect(56,26,8,14); }
+function bindMobileBtn(id, keyName) { let el = document.getElementById(id); if (!el) return; el.addEventListener('touchstart', e => { e.preventDefault(); keys[keyName] = true; el.classList.add('pressed'); }, { passive: false }); el.addEventListener('touchend', e => { e.preventDefault(); keys[keyName] = false; el.classList.remove('pressed'); }, { passive: false }); el.addEventListener('mousedown', () => { keys[keyName] = true; el.classList.add('pressed'); }); el.addEventListener('mouseup', () => { keys[keyName] = false; el.classList.remove('pressed'); }); el.addEventListener('mouseleave', () => { keys[keyName] = false; el.classList.remove('pressed'); }); }
+
+// ============================================ WINDOW FUNCTIES ============================================
+window.startLevel = function(idx) { if (rafId) cancelAnimationFrame(rafId); document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('screen-game').classList.add('active'); setTimeout(() => { initCanvas(); game = createGame(idx); game.state = 'playing'; document.getElementById('pause-overlay').classList.add('hidden'); Crafting.close(); HUD.update(getHUDState()); Hotbar.setSlot(0, 'wood_pickaxe'); if (idx >= 2) Hotbar.setSlot(1, 'stone_pickaxe'); if (idx >= 4) Hotbar.setSlot(2, 'iron_pickaxe'); Hotbar.select(0); updateInvDisplay(); lastTime = performance.now(); rafId = requestAnimationFrame(loop); }, 50); };
+window.pauseGame = function() { if (!game || game.state !== 'playing') return; game.state = 'paused'; cancelAnimationFrame(rafId); document.getElementById('pause-overlay').classList.remove('hidden'); };
+window.resumeGame = function() { if (!game || game.state !== 'paused') return; document.getElementById('pause-overlay').classList.add('hidden'); game.state = 'playing'; lastTime = performance.now(); rafId = requestAnimationFrame(loop); };
+window.quitGame = function() { if (rafId) cancelAnimationFrame(rafId); game = null; document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('end-overlay').classList.add('hidden'); Crafting.close(); renderLevelSelect(); document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('screen-menu').classList.add('active'); };
+window.retryLevel = function() { let idx = game ? game.levelIdx : 0; document.getElementById('end-overlay').classList.add('hidden'); window.startLevel(idx); };
+window.nextLevel = function() { let idx = (game ? game.levelIdx : 0) + 1; document.getElementById('end-overlay').classList.add('hidden'); if (idx < LEVEL_DEFS.length) window.startLevel(idx); };
+
+// ============================================ INITIALISATIE ============================================
+document.addEventListener('DOMContentLoaded', () => {
+  drawMenuCharacter(); renderLevelSelect();
+  document.getElementById('btn-start').addEventListener('click', () => { document.getElementById('screen-menu').classList.remove('active'); document.getElementById('screen-levels').classList.add('active'); });
+  document.getElementById('btn-howto').addEventListener('click', () => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('screen-howto').classList.add('active'); });
+  document.getElementById('btn-back').addEventListener('click', () => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('screen-menu').classList.add('active'); });
+  document.getElementById('btn-levels-back').addEventListener('click', () => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('screen-menu').classList.add('active'); });
+  document.getElementById('btn-close-craft').addEventListener('click', () => Crafting.close());
+  document.getElementById('btn-pause').addEventListener('click', () => window.pauseGame());
+  document.getElementById('btn-resume').addEventListener('click', () => window.resumeGame());
+  document.getElementById('btn-quit').addEventListener('click', () => window.quitGame());
+  document.getElementById('btn-retry').addEventListener('click', () => window.retryLevel());
+  document.getElementById('btn-next-level').addEventListener('click', () => window.nextLevel());
+  document.getElementById('btn-end-menu').addEventListener('click', () => window.quitGame());
+  document.querySelectorAll('.hotbar-slot').forEach((slot, i) => { slot.addEventListener('click', () => Hotbar.select(i)); });
+  bindMobileBtn('mc-left', 'ArrowLeft'); bindMobileBtn('mc-right', 'ArrowRight'); bindMobileBtn('mc-jump', 'z'); bindMobileBtn('mc-mine', 'x');
+  document.getElementById('mc-craft').addEventListener('click', () => { if (game && game.state === 'playing') Crafting.open(game.inventory); });
+  window.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === 'c' || e.key === 'C') { if (game && game.state === 'playing') Crafting.open(game.inventory); } for (let i = 1; i <= 5; i++) if (e.key === String(i)) Hotbar.select(i - 1); });
+  window.addEventListener('keyup', e => { keys[e.key] = false; });
+});
+})();
+</script>
+</body>
+</html>
